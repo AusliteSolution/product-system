@@ -1,0 +1,87 @@
+import streamlit as st
+import pandas as pd
+import os
+
+# 1. 页面设置（宽屏模式）
+st.set_page_config(layout="wide", page_title="灯具产品选型系统")
+
+# 自定义样式：让产品卡片有点阴影感
+st.markdown("""
+    <style>
+    .stButton>button { width: 100%; }
+    .product-box {
+        border: 1px solid #eee;
+        padding: 15px;
+        border-radius: 10px;
+        box-shadow: 2px 2px 5px rgba(0,0,0,0.05);
+        margin-bottom: 20px;
+    }
+    </style>
+""", unsafe_allow_html=True)
+
+# 2. 加载数据
+@st.cache_data
+def load_data():
+    df = pd.read_csv('Test.CSV.xlsx - Sheet1.csv')
+    return df
+
+df = load_data()
+
+# 3. 侧边栏：筛选器 (Filters)
+st.sidebar.title("🔍 筛选条件")
+search = st.sidebar.text_input("关键词搜索 (型号/代码)")
+
+# 自动获取去重后的选项
+brand_list = sorted(df['BRAND'].unique())
+brands = st.sidebar.multiselect("品牌", brand_list)
+
+watt_list = sorted(df['瓦数区间'].unique())
+watts = st.sidebar.multiselect("瓦数区间", watt_list)
+
+ip_list = sorted(df['IP'].unique())
+ips = st.sidebar.multiselect("IP等级", ip_list)
+
+# 4. 过滤逻辑
+filtered_df = df.copy()
+if search:
+    filtered_df = filtered_df[filtered_df['型号'].str.contains(search, case=False) | 
+                              filtered_df['Litecent code'].str.contains(search, case=False)]
+if brands:
+    filtered_df = filtered_df[filtered_df['BRAND'].isin(brands)]
+if watts:
+    filtered_df = filtered_df[filtered_df['瓦数区间'].isin(watts)]
+if ips:
+    filtered_df = filtered_df[filtered_df['IP'].isin(ips)]
+
+# 5. 主界面：展示产品
+st.title("💡 Lighting Catalog")
+st.write(f"当前筛选条件下，共有 **{len(filtered_df)}** 款产品")
+
+# 用列布局实现网格效果 (每行 3 个)
+cols = st.columns(3)
+
+for idx, (_, row) in enumerate(filtered_df.iterrows()):
+    with cols[idx % 3]:
+        # 创建一个白色的卡片区域
+        st.markdown(f"### {row['型号']}")
+        
+        # 图片匹配逻辑
+        img_file = f"images/{row['型号']}.jpg"
+        if os.path.exists(img_file):
+            st.image(img_file, use_container_width=True)
+        else:
+            # 如果没图，显示占位图
+            st.image("https://via.placeholder.com/400x300.png?text=No+Image", use_container_width=True)
+        
+        # 显示参数
+        st.write(f"**品牌:** {row['BRAND']}")
+        st.write(f"**角度:** {row['角度']}")
+        st.write(f"**色温:** {row['色温']}")
+        st.markdown(f"**价格:** :orange[¥{row['价格']}]")
+        
+        # 详细参数放进折叠面板，保持页面整洁
+        with st.expander("更多参数详情"):
+            st.write(f"代码: {row['Litecent code']}")
+            st.write(f"尺寸: {row['尺寸']}")
+            st.write(f"开孔: {row['开孔尺寸']}")
+            st.write(f"方式: {row['方式']}")
