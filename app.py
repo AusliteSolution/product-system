@@ -10,7 +10,7 @@ from PIL import Image
 import io
 
 # --- 1. Page Configuration ---
-st.set_page_config(page_title="Auslite Spec - Designer Edition", layout="wide")
+st.set_page_config(page_title="LED Direct Product System", layout="wide")
 
 # --- 2. Advanced UI Design Styling ---
 st.markdown("""
